@@ -62,8 +62,9 @@ boolean dmx_updated = false;
 boolean HazerShutDown = false;
 volatile unsigned long       lastFrameReceivedTime =0;
 unsigned long       Fader_OFF_Time;
+// Time is set in ms (example: 10000UL = 10 sec)
 const unsigned long dmxTimeoutMillis = 10000UL; // 10 seconds
-const unsigned long HazerOFFTimoeutMillis = 900000UL; // = 15 minutes
+const unsigned long HazerOFFTimoeutMillis = 5000UL; // original -> 900000UL; // = 15 minutes
 boolean count_down_off = false;
 
 
@@ -98,17 +99,22 @@ void loop()
   }
 
   if (isHazerON && HazerShutDown ) {      // Cheking timer
-    // Has timeout passed?
     if ((millis() - Fader_OFF_Time) > HazerOFFTimoeutMillis) {    // check if time has passed 
       DMX_to_HAZER_OFF ();
     }
   }
 
-
+  // If we didn't receive a DMX frame within the timeout period  clear all dmx channels  
+  if ((millis() - lastFrameReceivedTime) > dmxTimeoutMillis ) {  
+      dmx_slave.getBuffer().clear();
+    // Since we are not receiving more packets we will never go into function
+    // So we have to controll all from here
+    DMX_to_HAZER_OFF_DELAYED ();
+  }
 }
 
 void OnFrameReceiveComplete (void) {
-  // lastFrameReceivedTime = millis ();
+  lastFrameReceivedTime = millis ();
   dmx_value = dmx_slave.getChannelValue (1);
   dmx_updated = true;
 }
