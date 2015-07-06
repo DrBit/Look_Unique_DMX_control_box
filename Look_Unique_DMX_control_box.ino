@@ -47,17 +47,25 @@
 int hazer_mode = hz_IDLE;
 unsigned int Frame_received=0;
 
+const int chan_threshold = 25;    // Threshold in order to activate smoke (min. 1)
 const int Relay_PIN = 8;    // Pin conected at the relay
 const int TRPin = 2;  // Transmit enable / receive mode pin 0 = receive // 1 = transmit
 const int DMX_status = 9;
 DMX_Slave dmx_slave ( DMX_SLAVE_CHANNELS );  // Configure a DMX slave controller
+int dmx_value = 0;
+boolean dmx_updated = false;
+
+
+
+
+// timing
+boolean HazerShutDown = false;
 volatile unsigned long       lastFrameReceivedTime =0;
 unsigned long       Fader_OFF_Time;
 const unsigned long dmxTimeoutMillis = 10000UL; // 10 seconds
 const unsigned long HazerOFFTimoeutMillis = 900000UL; // = 15 minutes
 boolean count_down_off = false;
-int dmx_value = 0;
-boolean dmx_updated = false;
+
 
 
 // the setup routine runs once when you press reset:
@@ -74,10 +82,67 @@ void setup() {
   startingdevice ();
 }
 
+
+
 // the loop routine runs over and over again forever:
 void loop() 
 {
-  /*
+  if (dmx_updated) {
+    analogWrite (DMX_status, dmx_value);
+    if ( dmx_value > chan_threshold ) { 
+      //Fader_OFF_Time = millis (); // Record the time fader whent off for calculating the timeout.
+      DMX_to_HAZER_ON ();
+    }else{
+      DMX_to_HAZER_OFF_DELAYED ();
+    }
+    dmx_updated = false;
+  }
+
+  if (isHazerON && HazerShutDown ) {      // Cheking timer
+    // Has timeout passed?
+    DMX_to_HAZER_OFF ();
+  }
+
+
+}
+
+void OnFrameReceiveComplete (void) {
+  // lastFrameReceivedTime = millis ();
+  dmx_value = dmx_slave.getChannelValue (1);
+  dmx_updated = true;
+}
+
+void DMX_to_HAZER_OFF () {
+  digitalWrite (Relay_PIN, HIGH); // Set DMX to hazer HIGH (meaning disconected) 
+}
+
+void DMX_to_HAZER_OFF_DELAYED () {
+  HazerShutDown = true;
+}
+
+void DMX_to_HAZER_ON () {
+  digitalWrite (Relay_PIN, LOW); // Set DMX to hazer LOW (meaning connected)
+  HazerShutDown = false;
+}
+
+boolean isHazerON () {
+  if (digitalRead (Relay_PIN)) return true;
+  return false;
+}
+
+void startingdevice () {
+  digitalWrite (DMX_status, HIGH);  // Set led HIGH 
+  delay(500);
+  digitalWrite (DMX_status, LOW);  // Set led LOW 
+  delay(500);
+  digitalWrite (DMX_status, HIGH);  // Set led HIGH 
+  delay(500);
+  digitalWrite (DMX_status, LOW);  // Set led LOW
+}
+
+
+
+ /*
   if ((millis() - lastFrameReceivedTime) > dmxTimeoutMillis ) {  // If we didn't receive a DMX frame within the timeout period  clear all dmx channels  
     dmx_slave.getBuffer().clear();
     // Since we are not receiving more packets we will never go into function
@@ -130,60 +195,3 @@ void loop()
     break;}
   } 
   */
-
-  if (dmx_updated) {
-    dmx_updated = false;
-    FrameReceived ();
-    //analogWrite (DMX_status, dmx_value);
-    if ( dmx_value > 25 ) { 
-      //Fader_OFF_Time = millis (); // Record the time fader whent off for calculating the timeout.
-      DMX_to_HAZER_ON ();
-    }else{
-      DMX_to_HAZER_OFF ();
-    }
-  }
-}
-
-void OnFrameReceiveComplete (void) {
-  lastFrameReceivedTime = millis ();
-  //Frame_received ++;
-  dmx_value = dmx_slave.getChannelValue (1);
-  dmx_updated = true;
-}
-
-
-/*
-bool IsDMXON () {
-  Frame_received =0;
-  
-  analogWrite (DMX_status, dmx_value);
-  if ( dmx_value > 25 )  return true;
-  Fader_OFF_Time = millis (); // Record the time fader whent off for calculating the timeout.
-  return false;
-}
-*/
-
-void DMX_to_HAZER_OFF () {
-  digitalWrite (Relay_PIN, HIGH); // Set DMX to hazer HIGH (meaning disconected) 
-}
-
-void DMX_to_HAZER_ON () {
-  digitalWrite (Relay_PIN, LOW); // Set DMX to hazer LOW (meaning connected)
-}
-
-void startingdevice () {
-  digitalWrite (DMX_status, HIGH);  // Set led HIGH 
-  delay(500);
-  digitalWrite (DMX_status, LOW);  // Set led LOW 
-  delay(500);
-  digitalWrite (DMX_status, HIGH);  // Set led HIGH 
-  delay(500);
-  digitalWrite (DMX_status, LOW);  // Set led LOW
-}
-
-
-void FrameReceived () {
-  digitalWrite (DMX_status, HIGH);  // Set led HIGH 
-  delay(1);
-  digitalWrite (DMX_status, LOW);  // Set led LOW 
-}
