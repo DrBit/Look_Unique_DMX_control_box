@@ -106,10 +106,11 @@ void loop()
 
   // If we didn't receive a DMX frame within the timeout period  clear all dmx channels  
   if ((millis() - lastFrameReceivedTime) > dmxTimeoutMillis ) {  
-      dmx_slave.getBuffer().clear();
-    // Since we are not receiving more packets we will never go into function
-    // So we have to controll all from here
-    DMX_to_HAZER_OFF_DELAYED ();
+    dmx_slave.getBuffer().clear();  // Clear lib data
+    dmx_value = 0;    // clear local data
+    dmx_updated = true;   // Update data 1 time
+    // Since we are not receiving more packets we will never go into function So we have to controll all from here
+    DMX_to_HAZER_OFF_DELAYED ();    // Start shut down procedure
   }
 }
 
