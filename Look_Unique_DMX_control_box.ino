@@ -90,7 +90,6 @@ void loop()
   if (dmx_updated) {
     analogWrite (DMX_status, dmx_value);
     if ( dmx_value > chan_threshold ) { 
-      //Fader_OFF_Time = millis (); // Record the time fader whent off for calculating the timeout.
       DMX_to_HAZER_ON ();
     }else{
       DMX_to_HAZER_OFF_DELAYED ();
@@ -100,7 +99,9 @@ void loop()
 
   if (isHazerON && HazerShutDown ) {      // Cheking timer
     // Has timeout passed?
-    DMX_to_HAZER_OFF ();
+    if ((millis() - Fader_OFF_Time) > HazerOFFTimoeutMillis) {    // check if time has passed 
+      DMX_to_HAZER_OFF ();
+    }
   }
 
 
@@ -117,7 +118,10 @@ void DMX_to_HAZER_OFF () {
 }
 
 void DMX_to_HAZER_OFF_DELAYED () {
-  HazerShutDown = true;
+  if (!HazerShutDown && isHazerON){    // We doit only one time or the dealy mark  (Fader_OFF_Time) would keep updating
+    HazerShutDown = true;
+    Fader_OFF_Time = millis (); // Record the time fader whent off for calculating the timeout.
+  }
 }
 
 void DMX_to_HAZER_ON () {
