@@ -51,6 +51,9 @@ const int chan_threshold = 25;    // Threshold in order to activate smoke (min. 
 const int Relay_PIN = 8;    // Pin conected at the relay
 const int TRPin = 2;  // Transmit enable / receive mode pin 0 = receive // 1 = transmit
 const int DMX_status = 9;
+
+const int Debug_switch = 12;    // PIN 12 is connected to switch but not used 
+
 DMX_Slave dmx_slave ( DMX_SLAVE_CHANNELS );  // Configure a DMX slave controller
 int dmx_value = 0;
 boolean dmx_updated = false;
@@ -77,6 +80,8 @@ void setup() {
   digitalWrite (DMX_status, LOW);
   pinMode ( Relay_PIN, OUTPUT ); // (relay is set to Default activated so when we activate relay it will disable the smoke machine)          
   digitalWrite (Relay_PIN, HIGH); // By default the pin is disconnected so will be connected as soon as we receive the first package
+  // configurte pin to be as internall pull up input
+  pinMode(Debug_switch, INPUT_PULLUP); // for arduino IDE version 1.0.1 and above
   dmx_slave.enable ();    // Enable DMX slave interface and start recording DMX data
   dmx_slave.setStartAddress (1);  // Set start address to 1, this is also the default setting You can change this address at any time during the program
   dmx_slave.onReceiveComplete ( OnFrameReceiveComplete ); // Call back function when a frame is received
@@ -149,6 +154,12 @@ void startingdevice () {
   digitalWrite (DMX_status, HIGH);  // Set led HIGH 
   delay(500);
   digitalWrite (DMX_status, LOW);  // Set led LOW
+
+  // If debug button is pressed (reading LOW) we enter debug mode
+  int debug_status = digitalRead (Debug_switch);
+  if (debug_status == 0) {
+    //entering debug mode
+  }
 }
 
 
