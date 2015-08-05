@@ -1,11 +1,15 @@
-// Quim August 2015
+// Doctor Bit 2015
+// http://blog.drbit.nl
 // Coded for Paradiso Amsterdam
 //
-// This code functions as a dmx controlled relay. In this case what we are 
-// switchin is the dmx data line itself to the next DMX connected device (Look Unique Hazer) 
-// By controlling the DMX we are also controlling when the HAer will automatically switch itself off
-// So by setting a DMX channel to control the machine we will ensure that the machin is properly 
-// shut down.
+// For use with the Conceptinetics DMX Isolated shield.
+//
+// This piece of code has been designed to work with a custome made shield on top of the Conceptinetics
+// Shield. Refer to schematics for further info.
+// The main functionality is to listen to a DMX channel and connect or disconnect DMX signal to an attached 
+// device, in this case th Look Unique Hazer.
+// Since the lack of control channel on the Unique hazer this will act as one with as less as possible
+// modifications on the original hardware.
 
 
 /*
@@ -30,21 +34,6 @@
 #define __DELAY_BACKWARD_COMPATIBLE__ 
 #include <Conceptinetics.h>
 
-//
-// CTC-DRA-13-1 ISOLATED DMX-RDM SHIELD JUMPER INSTRUCTIONS
-//
-// If you are using the above mentioned shield you should 
-// place the RXEN jumper towards G (Ground), This will turn
-// the shield into read mode without using up an IO pin
-//
-// The !EN Jumper should be either placed in the G (GROUND) 
-// position to enable the shield circuitry 
-//   OR
-// if one of the pins is selected the selected pin should be
-// set to OUTPUT mode and set to LOGIC LOW in order for the 
-// shield to work
-//
-
 // PIN setup
 const int chan_threshold = 25;    // Threshold in order to activate smoke (min. 1)
 const int Relay_PIN = 8;          // Pin conected at the relay
@@ -54,17 +43,17 @@ const int Debug_switch = 12;      // PIN 12 is connected to switch but not used
 
 // DMX Shield setup
 const int DMX_SLAVE_CHANNELS = 1; // Number of channels to read
-const int DMX_start_addres = 508; // Starting DMX address
-DMX_Slave dmx_slave ( DMX_SLAVE_CHANNELS );  // Configure a DMX slave controller
+const unsigned int DMX_start_addres = 508;    // Starting DMX address
+DMX_Slave dmx_slave ( DMX_SLAVE_CHANNELS );   // Configure a DMX slave controller
 int dmx_value = 0;                // Var to store DMX readed value
 boolean dmx_updated = false;      // Flag for signaling when a DMX frame has been received
 
 // Timing control
-boolean HazerShutDown = false;    // Flag to mark when the hazer is on shut down mode delayed
+boolean HazerShutDown = false;    // Flag to mark when the hazer is on delayed shut down mode 
 volatile unsigned long lastFrameReceivedTime =0;      // Marks when the last DMX frame was received
 unsigned long Fader_OFF_Time;                         // Record the time fader whent off for calculating the timeout
-const unsigned long dmxTimeoutMillis = 10000UL;       // Timeout when we lose DMX connection - Time is set in ms (example: 10000UL = 10 sec)
-const unsigned long HazerOFFTimoeutMillis = 300000UL; // Time out when we switch smoke OFF - original -> 300000UL = 5 minutes
+const unsigned long dmxTimeoutMillis = 5000UL;       // Timeout when we lose DMX connection - Time is set in ms (example: 10000UL = 10 sec)
+const unsigned long HazerOFFTimoeutMillis = 10000UL; // Time out when we switch smoke OFF - original -> 300000UL = 5 minutes
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -104,7 +93,7 @@ void loop()
   if ((millis() - lastFrameReceivedTime) > dmxTimeoutMillis ) {  
     dmx_slave.getBuffer().clear();    // Clear lib data
     dmx_value = 0;                    // clear local data
-    dmx_updated = true;               // Update data 1 time (as if we received a DMX fram)
+    dmx_updated = true;               // Update data 1 time (as if we received a DMX frame)
     // Since we are not receiving more packets we will never go into function smoke shut dowm So we have to controll all from here
     DMX_to_HAZER_OFF_DELAYED ();      // Start shut down procedure
   }
@@ -112,7 +101,7 @@ void loop()
 
 void OnFrameReceiveComplete (void) {
   lastFrameReceivedTime = millis ();
-  dmx_value = dmx_slave.getChannelValue (1);
+  dmx_value = dmx_slave.getChannelValue (1);  // Relative to the buffer (1 would be the first starting address)
   dmx_updated = true;                 // Flag that a frame has been received
 }
 
@@ -150,6 +139,6 @@ void startingdevice () {
   // If debug button is pressed (reading LOW) we enter debug mode
   int debug_status = digitalRead (Debug_switch);
   if (debug_status == 0) {
-    //entering debug mode
+    //entering debug mode (not implemented)
   }
 }
