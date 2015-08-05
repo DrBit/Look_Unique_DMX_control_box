@@ -12,6 +12,9 @@
 // modifications on the original hardware.
 
 
+// I'm using DMX library from Conceptinetics with slight modification to be compatible with the 
+// new Arduino IDE. (attached in this repository )
+
 /*
   Conceptinetics DMX library
   Copyright (c) 2013 W.A. van der Meeren <danny@illogic.nl>.  All right reserved.
